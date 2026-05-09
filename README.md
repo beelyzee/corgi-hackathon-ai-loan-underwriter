@@ -71,3 +71,16 @@ Required for model answers:
 - `PIPESHIFT_API_KEY` - Pipeshift API key, configured in Render or `.env.local`
 - `PIPESHIFT_MODEL` - model name to call, defaults to `moonshotai/Kimi-K2.6`
 - `PIPESHIFT_API_BASE` - Pipeshift API base URL, defaults to `https://api.pipeshift.com/api/v0`
+- `SESSION_SECRET` - random secret used to sign login sessions
+- `BASE_URL` - full app URL used by OAuth callback (example: `https://your-app.onrender.com`)
+- `GOOGLE_CLIENT_ID` - Google OAuth web app client ID
+- `GOOGLE_CLIENT_SECRET` - Google OAuth web app client secret
+
+## Google Auth Setup
+
+1. In Google Cloud Console, create OAuth credentials for a Web application.
+2. Add authorized redirect URI:
+   - `https://your-render-domain/auth/google/callback`
+   - For local development: `http://localhost:3000/auth/google/callback`
+3. In Render environment variables, set `SESSION_SECRET`, `BASE_URL`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`.
+4. Redeploy and use the "Sign in with Google" button in the app.

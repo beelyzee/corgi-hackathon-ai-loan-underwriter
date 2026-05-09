@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
 import express from "express";
+import session from "express-session";
+import passport from "passport";
+import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 
 dotenv.config();
 dotenv.config({ path: ".env.local", override: true });
@@ -8,6 +11,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 const pipeshiftApiBase = process.env.PIPESHIFT_API_BASE || "https://api.pipeshift.com/api/v0";
 const pipeshiftModel = process.env.PIPESHIFT_MODEL || "moonshotai/Kimi-K2.6";
+const sessionSecret = process.env.SESSION_SECRET || "dev-only-change-me";
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+const authEnabled = Boolean(googleClientId && googleClientSecret);
 const rocketRatesUrl = "https://www.rocketmortgage.com/mortgage-rates";
 const defaultRates = [
   { name: "30-year fixed", rate: 6.875, apr: 7.25, termYears: 30, source: "Fallback estimate" },
@@ -18,6 +26,53 @@ const defaultRates = [
 ];
 
 app.use(express.json({ limit: "1mb" }));
+app.use(
+  session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    },
+  }),
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
+
+if (authEnabled) {
+  passport.use(
+    new GoogleStrategy(
+      {
+        clientID: googleClientId,
+        clientSecret: googleClientSecret,
+        callbackURL: `${baseUrl}/auth/google/callback`,
+      },
+      (_accessToken, _refreshToken, profile, done) =>
+        done(null, {
+          id: profile.id,
+          displayName: profile.displayName,
+          email: profile.emails?.[0]?.value || null,
+          photo: profile.photos?.[0]?.value || null,
+        }),
+    ),
+  );
+}
+
+function requireAuth(req, res, next) {
+  if (!authEnabled) {
+    return res.status(503).json({ error: "Google auth is not configured on the server." });
+  }
+  if (req.isAuthenticated?.()) {
+    return next();
+  }
+  return res.status(401).json({ error: "Please sign in with Google to continue." });
+}
 
 const money = (value) =>
   Number(value || 0).toLocaleString("en-US", {
@@ -598,6 +653,10 @@ app.get("/", (_req, res) => {
         <aside class="rate-source">
           <strong id="rate-source-title">Loading rates</strong>
           <span id="rate-source-copy">Trying Rocket Mortgage purchase rates...</span>
+          <div class="actions">
+            <button id="auth-button" type="button">Sign in with Google</button>
+          </div>
+          <span id="auth-status">Checking auth…</span>
         </aside>
       </header>
 
@@ -690,8 +749,11 @@ app.get("/", (_req, res) => {
       const rateInput = document.querySelector("#rate-input");
       const answer = document.querySelector("#answer");
       const question = document.querySelector("#question");
+      const authButton = document.querySelector("#auth-button");
+      const authStatus = document.querySelector("#auth-status");
       let latestScenario = null;
       let latestRates = [];
+      let currentUser = null;
 
       const usd = (value) => Number(value || 0).toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
       const pct = (value) => (Number(value || 0) * 100).toFixed(1) + "%";
@@ -719,6 +781,29 @@ app.get("/", (_req, res) => {
         ].map(([label, value]) => '<div class="row"><span>' + label + '</span><strong>' + usd(value) + '</strong></div>').join("");
 
         programsEl.innerHTML = data.programs.slice(0, 5).map((item) => '<article class="program"><div class="program-top"><strong>' + item.program + '</strong><span class="score">' + item.score + '</span></div><p>' + item.reason + '</p><p><strong>Watch:</strong> ' + item.watchout + '</p></article>').join("");
+      }
+
+      function updateAuthUi(payload) {
+        if (!payload.authEnabled) {
+          authButton.disabled = true;
+          authButton.textContent = "Auth not configured";
+          authStatus.textContent = "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable login.";
+          return;
+        }
+        currentUser = payload.user || null;
+        if (currentUser) {
+          authButton.textContent = "Sign out";
+          authStatus.textContent = "Signed in as " + (currentUser.email || currentUser.displayName || "user");
+        } else {
+          authButton.textContent = "Sign in with Google";
+          authStatus.textContent = "Sign in to use the assistant.";
+        }
+      }
+
+      async function loadSession() {
+        const response = await fetch("/api/session");
+        const payload = await response.json();
+        updateAuthUi(payload);
       }
 
       async function calculate() {
@@ -798,6 +883,16 @@ app.get("/", (_req, res) => {
         }
       });
 
+      authButton.addEventListener("click", async () => {
+        if (currentUser) {
+          await fetch("/auth/logout", { method: "POST" });
+          await loadSession();
+          return;
+        }
+        window.location.href = "/auth/google";
+      });
+
+      loadSession();
       loadRates().then(calculate).catch((error) => {
         document.querySelector("#rate-source-title").textContent = "Calculator ready";
         document.querySelector("#rate-source-copy").textContent = error.message;
@@ -810,6 +905,38 @@ app.get("/", (_req, res) => {
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get("/api/session", (req, res) => {
+  res.json({
+    authEnabled,
+    user: req.user || null,
+  });
+});
+
+app.get("/auth/google", (req, res, next) => {
+  if (!authEnabled) {
+    return res.status(503).send("Google auth is not configured.");
+  }
+  return passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+});
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/", session: true }),
+  (_req, res) => {
+    res.redirect("/");
+  },
+);
+
+app.post("/auth/logout", (req, res, next) => {
+  req.logout((error) => {
+    if (error) return next(error);
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid");
+      res.status(204).send();
+    });
+  });
 });
 
 app.get("/api/rates", async (_req, res) => {
@@ -833,7 +960,7 @@ app.post("/api/calculate", (req, res) => {
   res.json({ calculation, programs });
 });
 
-app.post("/api/ask", async (req, res) => {
+app.post("/api/ask", requireAuth, async (req, res) => {
   const question = String(req.body?.question || "").trim();
 
   if (!question) {
