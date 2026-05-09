@@ -428,6 +428,31 @@ app.get("/", (_req, res) => {
 
       .rate-source strong { display: block; margin-bottom: 6px; }
       .rate-source span { color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+      .auth-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .profile-chip {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fffefa;
+      }
+      .profile-chip img {
+        width: 24px;
+        height: 24px;
+        border-radius: 999px;
+        object-fit: cover;
+      }
+      .profile-chip strong {
+        margin: 0;
+        font-size: 0.82rem;
+      }
 
       .grid {
         display: grid;
@@ -653,8 +678,13 @@ app.get("/", (_req, res) => {
         <aside class="rate-source">
           <strong id="rate-source-title">Loading rates</strong>
           <span id="rate-source-copy">Trying Rocket Mortgage purchase rates...</span>
-          <div class="actions">
+          <div class="auth-row">
+            <div id="profile-chip" class="profile-chip" aria-live="polite">
+              <img id="profile-photo" alt="Profile" />
+              <strong id="profile-name"></strong>
+            </div>
             <button id="auth-button" type="button">Sign in with Google</button>
+            <button id="signout-button" class="secondary" type="button" style="display:none;">Sign out</button>
           </div>
           <span id="auth-status">Checking auth…</span>
         </aside>
@@ -750,7 +780,11 @@ app.get("/", (_req, res) => {
       const answer = document.querySelector("#answer");
       const question = document.querySelector("#question");
       const authButton = document.querySelector("#auth-button");
+      const signoutButton = document.querySelector("#signout-button");
       const authStatus = document.querySelector("#auth-status");
+      const profileChip = document.querySelector("#profile-chip");
+      const profilePhoto = document.querySelector("#profile-photo");
+      const profileName = document.querySelector("#profile-name");
       let latestScenario = null;
       let latestRates = [];
       let currentUser = null;
@@ -787,15 +821,25 @@ app.get("/", (_req, res) => {
         if (!payload.authEnabled) {
           authButton.disabled = true;
           authButton.textContent = "Auth not configured";
+          signoutButton.style.display = "none";
+          profileChip.style.display = "none";
           authStatus.textContent = "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable login.";
           return;
         }
         currentUser = payload.user || null;
         if (currentUser) {
-          authButton.textContent = "Sign out";
+          authButton.style.display = "none";
+          signoutButton.style.display = "inline-block";
+          profileChip.style.display = "inline-flex";
+          profileName.textContent = currentUser.displayName || currentUser.email || "Signed in";
+          profilePhoto.src = currentUser.photo || "https://www.gravatar.com/avatar/?d=mp";
           authStatus.textContent = "Signed in as " + (currentUser.email || currentUser.displayName || "user");
         } else {
+          authButton.disabled = false;
+          authButton.style.display = "inline-block";
           authButton.textContent = "Sign in with Google";
+          signoutButton.style.display = "none";
+          profileChip.style.display = "none";
           authStatus.textContent = "Sign in to use the assistant.";
         }
       }
@@ -884,12 +928,12 @@ app.get("/", (_req, res) => {
       });
 
       authButton.addEventListener("click", async () => {
-        if (currentUser) {
-          await fetch("/auth/logout", { method: "POST" });
-          await loadSession();
-          return;
-        }
         window.location.href = "/auth/google";
+      });
+
+      signoutButton.addEventListener("click", async () => {
+        await fetch("/auth/logout", { method: "POST" });
+        await loadSession();
       });
 
       loadSession();
