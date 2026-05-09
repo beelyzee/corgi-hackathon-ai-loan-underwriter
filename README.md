@@ -1,15 +1,16 @@
-# Corgi Hackathon - AI Loan Underwriter
+# Corgi Hackathon - Purchase Mortgage Planner
 
-Hackathon project for building an AI-assisted loan underwriting workflow.
+Hackathon project for building an AI-assisted purchase-money mortgage planning workflow.
 
 ## Project Goal
 
-Create a prototype that helps review loan applications by:
+Create a prototype that helps home buyers and loan teams compare purchase mortgage options by:
 
-- Collecting borrower, income, asset, debt, and property information
-- Identifying missing or inconsistent application details
-- Summarizing underwriting risk factors
-- Producing explainable recommendations for human review
+- Calculating estimated monthly payment
+- Estimating purchase price affordability
+- Pulling purchase-rate data from Rocket Mortgage when available
+- Recommending likely-fit loan programs for human review
+- Answering purchase-money mortgage questions with a server-side AI assistant
 
 ## Collaboration
 
@@ -35,18 +36,19 @@ Then open `http://localhost:3000`.
 
 Useful endpoints:
 
-- `GET /` - basic project landing page
+- `GET /` - purchase mortgage planner UI
 - `GET /health` - Render health check
-- `POST /api/ask` - ask the Pipeshift-backed assistant a question
-- `POST /api/underwrite` - starter underwriting review endpoint
+- `GET /api/rates` - attempts to fetch Rocket Mortgage purchase rates, with fallback estimates
+- `POST /api/calculate` - calculates payment, affordability, and loan program fit
+- `POST /api/ask` - asks the Pipeshift-backed purchase mortgage assistant a question
 
 Common next steps:
 
-- Choose the frontend/backend stack
-- Define the loan application data model
-- Add sample anonymized application data
-- Build the underwriting prompt or rules engine
-- Add tests for important risk calculations
+- Add state-specific taxes and insurance defaults
+- Add product overlays by lender
+- Add cash-to-close and seller-credit calculations
+- Add amortization and payment comparison views
+- Add tests for important payment and affordability calculations
 
 ## Deploying on Render
 
