@@ -22,7 +22,22 @@ Suggested workflow:
 
 ## Getting Started
 
-This repo is intentionally lightweight right now. Add the app stack here once the team chooses it.
+This repo uses a small Node.js/Express service so it can deploy cleanly to Render.
+
+Install dependencies and run locally:
+
+```powershell
+npm install
+npm run dev
+```
+
+Then open `http://localhost:3000`.
+
+Useful endpoints:
+
+- `GET /` - basic project landing page
+- `GET /health` - Render health check
+- `POST /api/underwrite` - starter underwriting review endpoint
 
 Common next steps:
 
@@ -32,7 +47,18 @@ Common next steps:
 - Build the underwriting prompt or rules engine
 - Add tests for important risk calculations
 
+## Deploying on Render
+
+This repo includes `render.yaml` for Render Blueprint deploys.
+
+1. In Render, create a new Blueprint.
+2. Connect this GitHub repo.
+3. Render will use:
+   - Build command: `npm install`
+   - Start command: `npm start`
+   - Health check path: `/health`
+4. Add any secrets, such as AI API keys, in Render's environment variable settings.
+
 ## Environment Variables
 
 Copy `.env.example` to `.env.local` and fill in local values.
-

@@ -1,0 +1,17 @@
+{
+  "name": "corgi-hackathon-ai-loan-underwriter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hackathon prototype for an AI-assisted loan underwriting workflow.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
