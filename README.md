@@ -67,5 +67,5 @@ Copy `.env.example` to `.env.local` and fill in local values.
 Required for model answers:
 
 - `PIPESHIFT_API_KEY` - Pipeshift API key, configured in Render or `.env.local`
-- `PIPESHIFT_MODEL` - model name to call, defaults to `meta-llama/Meta-Llama-3.1-8B-Instruct`
+- `PIPESHIFT_MODEL` - model name to call, defaults to `moonshotai/Kimi-K2.6`
 - `PIPESHIFT_API_BASE` - Pipeshift API base URL, defaults to `https://api.pipeshift.com/api/v0`

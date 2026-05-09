@@ -7,7 +7,7 @@ dotenv.config({ path: ".env.local", override: true });
 const app = express();
 const port = process.env.PORT || 3000;
 const pipeshiftApiBase = process.env.PIPESHIFT_API_BASE || "https://api.pipeshift.com/api/v0";
-const pipeshiftModel = process.env.PIPESHIFT_MODEL || "meta-llama/Meta-Llama-3.1-8B-Instruct";
+const pipeshiftModel = process.env.PIPESHIFT_MODEL || "moonshotai/Kimi-K2.6";
 
 app.use(express.json({ limit: "1mb" }));
 

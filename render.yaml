@@ -10,3 +10,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PIPESHIFT_MODEL
+        value: moonshotai/Kimi-K2.6
+      - key: PIPESHIFT_API_BASE
+        value: https://api.pipeshift.com/api/v0
