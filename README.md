@@ -37,6 +37,7 @@ Useful endpoints:
 
 - `GET /` - basic project landing page
 - `GET /health` - Render health check
+- `POST /api/ask` - ask the Pipeshift-backed assistant a question
 - `POST /api/underwrite` - starter underwriting review endpoint
 
 Common next steps:
@@ -62,3 +63,9 @@ This repo includes `render.yaml` for Render Blueprint deploys.
 ## Environment Variables
 
 Copy `.env.example` to `.env.local` and fill in local values.
+
+Required for model answers:
+
+- `PIPESHIFT_API_KEY` - Pipeshift API key, configured in Render or `.env.local`
+- `PIPESHIFT_MODEL` - model name to call, defaults to `meta-llama/Meta-Llama-3.1-8B-Instruct`
+- `PIPESHIFT_API_BASE` - Pipeshift API base URL, defaults to `https://api.pipeshift.com/api/v0`
